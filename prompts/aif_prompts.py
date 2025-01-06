@@ -58,3 +58,42 @@ Return only a JSON object with these three metrics, scored 0.0-1.0:
     "source_quality": [Score from 0.0 to 1.0 counting up by 0.1]
 }}
 '''
+
+prompt_characteristics_template = '''
+You are an expert evaluator analyzing research results to identify and score prompt engineering characteristics. Analyze the provided research report to evaluate the effectiveness of different prompt characteristics discussed.
+
+For each characteristic mentioned or implied in the research, assign a score from 0.0 to 1.0 based on how strongly the research suggests that characteristic contributes to effective prompts.
+
+Consider these characteristics:
+1. Concise - Favors brevity and directness
+2. Detailed - Provides comprehensive instructions
+3. Socratic - Uses questioning and guided discovery
+4. Role-Playing - Assigns specific roles or personas
+5. Structured - Uses clear formatting and organization
+6. Interactive - Encourages back-and-forth dialogue
+7. Technical - Uses domain-specific terminology
+8. Analytical - Emphasizes systematic analysis
+9. Creative - Encourages novel approaches
+10. Step-by-Step - Breaks tasks into clear sequences
+
+For each characteristic mentioned in the research:
+- Score 0.0: Research suggests this characteristic is harmful or counterproductive
+- Score 0.3: Research suggests minimal or uncertain benefit
+- Score 0.5: Research suggests moderate or context-dependent benefit
+- Score 0.7: Research suggests significant benefit in most cases
+- Score 1.0: Research suggests this is a critical characteristic for success
+
+Return a JSON object containing scores (0.0 to 1.0) ONLY for characteristics specifically discussed in the research. Omit characteristics not mentioned:
+{
+    "concise": [Score if mentioned],
+    "detailed": [Score if mentioned],
+    "socratic": [Score if mentioned],
+    "role_playing": [Score if mentioned],
+    "structured": [Score if mentioned],
+    "interactive": [Score if mentioned],
+    "technical": [Score if mentioned],
+    "analytical": [Score if mentioned],
+    "creative": [Score if mentioned],
+    "step_by_step": [Score if mentioned]
+}
+'''

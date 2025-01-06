@@ -11,6 +11,12 @@ active_inference/temporary_new_aif_agent.py
 active_inference/temporary_new_env.py
 active_inference/aif_agent_new_states.py
 active_inference/env_new_states.py
+active_inference/env_fixed.py
+active_inference/env_hierarchical.py
+active_inference/aif_agent_hierarchical.py
+active_inference/aif_agent_fixed.py
+active_inference/test_aif_agent.py
+active_inference/
 .chainlit/
 graph_search/
 graph_search_2/
@@ -22,3 +28,9 @@ README.md
 run_linux.sh
 run_windows.ps1
 research_knowledge_base.json
+test.ipynb
+models/gemini_models.py
+models/claude_models.py
+models/groq_models.py
+models/groq_models.py
+models/vllm_models.py

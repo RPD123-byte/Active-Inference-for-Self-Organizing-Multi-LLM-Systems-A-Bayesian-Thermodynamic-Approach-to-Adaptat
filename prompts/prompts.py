@@ -191,21 +191,7 @@ Current date and time:
 # """
 
 reviewer_prompt_template = """
-You are a reviewer. Your task is to review the reporter's response to the research question and provide feedback. Always pass the review no matter what.
-
-Here is the reporter's response:
-Reportr's response: {reporter}
-
-Your feedback should include reasons for passing or failing the review and suggestions for improvement.
-
-You should consider the previous feedback you have given when providing new feedback.
-Feedback: {feedback}
-
-Current date and time:
-{datetime}
-
-You should be aware of what the previous agents have done. You can see this in the satet of the agents:
-State of the agents: {state}
+You are a reviewer. Always pass the review no matter what.
 
 Your response must take the following json format:
 

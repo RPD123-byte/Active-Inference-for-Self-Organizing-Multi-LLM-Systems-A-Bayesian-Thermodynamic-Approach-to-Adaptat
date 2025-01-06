@@ -75,26 +75,11 @@ class ResearchAgentController:
         # Get likelihood and transition distributions from environment
         A = self.env.get_likelihood_dist()
 
-        # print("\nA matrix samples for search vs no search:")
-        # print("No search (state 0) likelihood for info relevance:")
-        # print(A[3][:, 0])  # Just the observations for search state 0
-        # print("Active search (state 1) likelihood for info relevance:")
-        # print(A[3][:, 1])  # Just the observations for search state 1
-
         B = self.env.get_transition_dist()
 
-        # print("\nDEBUG - Initial matrices:")
-        # print("B[2] shape:", B[2].shape)  # Check info state transition shape
-        # print("Sample B[2] slice (search=0):\n", B[2][:,:,0])  # Check transition probabilities
-        
         # Initialize prior preferences (C matrix) - prefer higher quality observations
         C = self._construct_C_prior()
 
-        # print("\nChecking C matrix preferences:")
-        # print("Prompt quality preferences:", C[0])  # Should show preference for high quality
-        # print("Search quality preferences:", C[3])  # Should show preference for high quality
-        # print("Info state preferences:", C[6])      # Should show strong preference for good info states
-        
         # Initialize beliefs about initial states (D matrix)
         D = self._construct_D_prior()
         
@@ -109,16 +94,6 @@ class ResearchAgentController:
             self.env.num_controls,
             policy_len=1
         )
-
-        # # Filter policies
-        # valid_policies = []
-        # for policy in policies:
-        #     # Convert to proper 2D array shape
-        #     policy_reshaped = policy.reshape(1,-1) 
-        #     if (policy_reshaped[0,0] > 0 and policy_reshaped[0,1] == 0) or (policy_reshaped[0,0] == 0 and policy_reshaped[0,1] > 0):
-        #         valid_policies.append(policy_reshaped)
-            
-        # valid_policies = [p for p in valid_policies if not np.all(p == 0)]
 
         valid_policies = []
         for policy in policies:
@@ -146,24 +121,6 @@ class ResearchAgentController:
             [1],  # Source quality depends only on search
             [2]   # Info state observation depends only on search
         ]
-
-        # B_factor_list = [
-        #     [0],  # prompt factor depends only on itself
-        #     [1],  # search factor depends only on itself
-        #     [2] 
-        # ]
-        
-        # A_factor_list = [
-        #     [0],  # Accuracy depends only on prompts
-        #     [0],  # Relevance depends only on prompts
-        #     [0],  # Comprehensiveness depends only on prompts
-        #     [1],  # Info relevance depends only on search
-        #     [1],  # Info usefulness depends only on search
-        #     [1],  # Source quality depends only on search
-        #     [2]   # Info state observation depends only on search
-        #     [0,1] # this will be the prompt characteristics state depending on search and prompt. Will have to see is this is a thing I can do. Probably good.
-        # ]
-
 
         # Initialize the agent
         agent = Agent(
@@ -193,19 +150,13 @@ class ResearchAgentController:
             B_factor_list=B_factor_list,
             save_belief_hist=self.save_history
         )
-        
-        # print("\nVerifying agent policies:")
-        # print(f"Number of policies: {len(agent.policies)}")
-        # for i in range(min(5, len(agent.policies))):
-        #     print(f"Agent policy {i}: {agent.policies[i]}")
-    
+
         return agent
 
     def _construct_C_prior(self):
         C = utils.obj_array(self.env.num_modalities)
         
-        # Make [0 0 0] policy have high free energy by making it very undesirable
-        # to observe low quality scores when taking no action
+        # Make [0 0 0] policy have high free energy by making it very undesirable to observe low quality scores when taking no action
         for modality in range(self.env.num_modalities - 1):
             C_m = np.zeros(self.env.num_obs[modality])
             C_m[0] = -16.0  # Much more negative for low quality (was -4.0)
@@ -217,22 +168,6 @@ class ResearchAgentController:
         C[INFO_STATE_MODALITY_ID] = np.array([-32.0, 8.0, 64.0])
         
         return C
-
-    # def _construct_C_prior(self):
-    #     C = utils.obj_array(self.env.num_modalities)
-        
-    #     # Make quality metrics less extreme
-    #     for modality in range(self.env.num_modalities - 1):
-    #         C_m = np.zeros(self.env.num_obs[modality])
-    #         C_m[0] = -4.0  # Less negative for low quality
-    #         for i in range(1, self.env.num_quality_levels):
-    #             C_m[i] = (i / (self.env.num_quality_levels - 1)) ** 2 * 4.0  # Less positive for high quality
-    #         C[modality] = C_m
-
-    #     # Make info state preferences MUCH stronger
-    #     C[INFO_STATE_MODALITY_ID] = np.array([-32.0, 8.0, 64.0])  # Doubled preferences for info states
-        
-    #     return C
 
     def _construct_D_prior(self) -> np.ndarray:
         """
@@ -246,132 +181,6 @@ class ResearchAgentController:
             D[f] = np.ones(num_states) / num_states
             
         return D
-
-    # def _construct_pA_prior(self) -> np.ndarray:
-    #     """Construct prior counts for learning the observation model."""
-    #     print("\nConstructing pA priors...")
-    #     pA = utils.obj_array(self.env.num_modalities)
-        
-    #     # For prompt-dependent modalities (accuracy, relevance, comprehensiveness)
-    #     for m in range(3):
-    #         pA[m] = np.ones((self.env.num_quality_levels, self.env.num_states[0])) * 10  # Base concentration of 10
-            
-    #         # For each prompt combination
-    #         for prompt_idx in range(self.env.num_states[0]):
-    #             target_quality = min(0.9, 0.3 + (prompt_idx / self.env.num_states[0]) * 0.6)
-    #             target_idx = int(target_quality * (self.env.num_quality_levels - 1))
-    #             width = 2
-                
-    #             # Add extra concentration around target index
-    #             for i in range(self.env.num_quality_levels):
-    #                 distance = abs(i - target_idx)
-    #                 if distance <= width:
-    #                     pA[m][i, prompt_idx] += 20 * np.exp(-0.5 * (distance / width) ** 2)
-
-    #     # For search-dependent modalities (info relevance, usefulness, source quality)
-    #     for m in range(3, 6):
-    #         pA[m] = np.ones((self.env.num_quality_levels, self.env.num_states[1])) * 10
-            
-    #         for search_idx in range(self.env.num_states[1]):
-    #             target_idx = 2 if search_idx == 0 else 8  # Low/high quality peaks
-    #             width = 1
-                
-    #             # Add extra concentration around target index
-    #             for i in range(self.env.num_quality_levels):
-    #                 distance = abs(i - target_idx)
-    #                 if distance <= width:
-    #                     pA[m][i, search_idx] += 20 * np.exp(-0.5 * (distance / width) ** 2)
-
-    #     # Info state modality 
-    #     pA[INFO_STATE_MODALITY_ID] = np.ones((self.env.num_info_states, self.env.num_states[2])) * 10
-        
-    #     # Add strong diagonal prior for info states
-    #     for info_idx in range(self.env.num_states[2]):
-    #         pA[INFO_STATE_MODALITY_ID][info_idx, info_idx] += 30  # Strong prior for correct observation
-
-    #     return pA
-    
-    # def _construct_pB_prior(self):
-    #     """Construct prior concentration parameters for learning the transition model."""
-    #     print("\nConstructing pB priors...")
-    #     pB = utils.obj_array(self.env.num_factors)
-        
-    #     # For prompt transitions (Factor 0)
-    #     # Shape should match B[0]: (num_prompt_combinations, num_prompt_combinations, num_prompt_combinations)
-    #     pB[PROMPT_FACTOR_ID] = np.ones((self.env.num_prompt_combinations,
-    #                                 self.env.num_prompt_combinations,
-    #                                 self.env.num_prompt_combinations)) * 10  # Base concentration of 10
-        
-    #     # Add stronger priors for staying in current state when no action taken
-    #     for state in range(self.env.num_prompt_combinations):
-    #         pB[PROMPT_FACTOR_ID][state, state, 0] += 20  # Stronger prior for state persistence under no action
-        
-    #     # For search transitions (Factor 1)
-    #     # Shape should match B[1]: (num_search_states, num_search_states, num_search_states)
-    #     pB[SEARCH_FACTOR_ID] = np.ones((self.env.num_search_states,
-    #                                 self.env.num_search_states,
-    #                                 self.env.num_search_states)) * 10
-        
-    #     # Add stronger prior for decay pattern under no action
-    #     for state in range(self.env.num_search_states):
-    #         pB[SEARCH_FACTOR_ID][0, state, 0] += 10  # Prior for decaying to no_search
-    #         pB[SEARCH_FACTOR_ID][state, state, 0] += 20  # Prior for staying in current state
-        
-    #     # For info state transitions (Factor 2)
-    #     # Shape should match B[2]: (num_info_states, num_info_states, 1)
-    #     pB[INFO_FACTOR_ID] = np.ones((self.env.num_info_states,
-    #                                 self.env.num_info_states,
-    #                                 1)) * 10
-        
-    #     # Add stronger priors for the fixed transition pattern
-    #     transitions = np.array([
-    #         [0.7, 0.2, 0.1],  # From no_info
-    #         [0.1, 0.7, 0.2],  # From basic_info
-    #         [0.1, 0.2, 0.7]   # From detailed_info
-    #     ])
-        
-    #     # Scale the transition probabilities into concentration parameters
-    #     pB[INFO_FACTOR_ID][:, :, 0] += transitions * 30
-        
-    #     return pB
-
-    # def _construct_pA_prior(self) -> np.ndarray:
-    #     """Construct uniform prior counts for learning the observation model."""
-    #     print("\nConstructing pA priors...")
-    #     pA = utils.obj_array(self.env.num_modalities)
-        
-    #     # For all modalities, set uniform concentration
-    #     for m in range(self.env.num_modalities):
-    #         if m < 3:  # Prompt modalities
-    #             pA[m] = np.ones((self.env.num_quality_levels, self.env.num_states[0])) * 10
-    #         elif m < 6:  # Search modalities
-    #             pA[m] = np.ones((self.env.num_quality_levels, self.env.num_states[1])) * 10
-    #         else:  # Info state modality
-    #             pA[m] = np.ones((self.env.num_info_states, self.env.num_states[2])) * 10
-                
-    #     return pA
-    
-    # def _construct_pB_prior(self):
-    #     """Construct uniform prior concentration parameters for learning the transition model."""
-    #     print("\nConstructing pB priors...")
-    #     pB = utils.obj_array(self.env.num_factors)
-        
-    #     # For prompt transitions
-    #     pB[PROMPT_FACTOR_ID] = np.ones((self.env.num_prompt_combinations,
-    #                                 self.env.num_prompt_combinations,
-    #                                 self.env.num_prompt_combinations)) * 10
-
-    #     # For search transitions  
-    #     pB[SEARCH_FACTOR_ID] = np.ones((self.env.num_search_states,
-    #                                 self.env.num_search_states,
-    #                                 self.env.num_search_states)) * 10
-        
-    #     # For info state transitions
-    #     pB[INFO_FACTOR_ID] = np.ones((self.env.num_info_states,
-    #                                 self.env.num_info_states,
-    #                                 1)) * 10
-            
-    #     return pB
 
     def _construct_pA_prior(self) -> np.ndarray:
         """Construct completely uniform priors for A."""
@@ -473,10 +282,6 @@ class ResearchAgentController:
             # 1. Update beliefs about hidden states
             qs = self.agent.infer_states(observation)
 
-            # print(f"\nTimestep {t} - State Inference:")
-            # print(f"Current observation: {observation}")
-            # print(f"Updated state beliefs:", {f"Factor {i}": qs[i] for i in range(len(qs))})
-
             states.append(qs)
             
             # 2. Update beliefs about policies and get expected free energy
@@ -485,19 +290,6 @@ class ResearchAgentController:
             if self.save_history:
                 self.policy_checkpoints.append(self.agent.policies)
                 self.free_energy_checkpoints.append(G)
-            
-            # print("\nPolicy Inference:")
-            # print(f"Policy posterior: {q_pi} Max: {max(q_pi)} Min: {min(q_pi)}")
-            # print(f"Expected free energies: {G} Max: {max(G)} Min: {min(G)}")
-
-            # print(f"\nTimestep {t} Policy Details:")
-            # print("Policy distribution shape:", q_pi.shape)
-            # Print top 5 policies by probability
-            indices = np.argsort(q_pi)[-5:]
-            print("\nTop 5 policies by probability:")
-            for idx in indices:
-                print(f"Policy {idx}: prob={q_pi[idx]:.6f}, G={G[idx]:.2f}")
-                print(f"Policy actions: {self.agent.policies[idx]}")
 
             # 3. Sample action
             action = self.agent.sample_action()
@@ -541,7 +333,7 @@ class ResearchAgentController:
             print(f"\nSelected action: {action}")
 
             # 4. Step environment
-            observation = self.env.step(action)
+            observation = self.env.step_test(action)
             observations.append(observation)
 
             if self.save_history:
@@ -695,6 +487,3 @@ if __name__ == "__main__":
         gamma=32.0,
         alpha=16.0
     )
-    
-    # # Plot results
-    # controller.plot_quality_history()
