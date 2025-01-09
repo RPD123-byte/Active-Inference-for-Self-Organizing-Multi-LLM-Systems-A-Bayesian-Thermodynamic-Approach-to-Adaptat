@@ -57,7 +57,7 @@ def update_obs_likelihood_dirichlet(pA, A, obs, qs, lr=1.0, modalities="all"):
 
     return qA
 
-def update_obs_likelihood_dirichlet_factorized(pA, A, obs, qs, A_factor_list, lr=1.0, modalities="all"):
+def update_obs_likelihood_dirichlet_factorized(pA, A, obs, qs, A_factor_list, actions, lr=1.0, modalities="all"):
     """ 
     Update Dirichlet parameters of the observation likelihood distribution, in a case where the observation model is reduced (factorized) and only represents
     the conditional dependencies between the observation modalities and particular hidden state factors (whose indices are specified in each modality-specific entry of ``A_factor_list``)
@@ -91,12 +91,15 @@ def update_obs_likelihood_dirichlet_factorized(pA, A, obs, qs, A_factor_list, lr
     qA: ``numpy.ndarray`` of dtype object
         Posterior Dirichlet parameters over observation model (same shape as ``A``), after having updated it with observations.
     """
+    print("\nUPDATING A MATRIX:")
+    print("Raw observation:", obs)
 
     num_modalities = len(pA)
     num_observations = [pA[modality].shape[0] for modality in range(num_modalities)]
 
     obs_processed = utils.process_observation(obs, num_modalities, num_observations)
     obs = utils.to_obj_array(obs_processed)
+    print("Processed obs shape:", [o.shape if o is not None else None for o in obs])
 
     if modalities == "all":
         modalities = list(range(num_modalities))
@@ -104,8 +107,31 @@ def update_obs_likelihood_dirichlet_factorized(pA, A, obs, qs, A_factor_list, lr
     qA = copy.deepcopy(pA)
         
     for modality in modalities:
+        print(f"\nModality {modality}:")
+        
+        # For prompt modalities (0-2)
+        if modality < 3:
+            if actions[0] == 0:  # No prompt action
+                continue  # Skip update
+            # Only update column corresponding to this prompt action
+            action_mask = np.zeros_like(A[modality])
+            action_mask[:, int(actions[0])] = 1.0
+            
+        # For search modalities (3-5) 
+        elif modality < 6:
+            if actions[1] == 0:  # No search action
+                continue  # Skip update
+            # Only update column corresponding to this search action
+            action_mask = np.zeros_like(A[modality])
+            action_mask[:, int(actions[1])] = 1.0
+            
+        # Info state modality (6) - allow updates regardless of action
+        else:
+            action_mask = np.ones_like(A[modality])
+            
         dfda = maths.spm_cross(obs[modality], qs[A_factor_list[modality]])
-        dfda = dfda * (A[modality] > 0).astype("float")
+        mask = (A[modality] > 0).astype("float") * action_mask  # Add action masking
+        dfda = dfda * mask
         qA[modality] = qA[modality] + (lr * dfda)
 
     return qA

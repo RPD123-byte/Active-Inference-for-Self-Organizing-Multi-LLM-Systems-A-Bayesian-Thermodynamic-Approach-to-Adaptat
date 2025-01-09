@@ -390,6 +390,52 @@ class ResearchAgentController:
                 pA[m] = np.ones((self.env.num_info_states, self.env.num_states[2])) * base_concentration
                     
         return pA
+    
+    # def _construct_pA_prior(self) -> np.ndarray:
+    #     """Construct A priors with different distributions for different search states."""
+    #     print("\nConstructing pA priors...")
+    #     pA = utils.obj_array(self.env.num_modalities)
+        
+    #     base_concentration = 1.0
+        
+    #     # Prompt modalities stay uniform
+    #     for m in range(3):
+    #         pA[m] = np.ones((self.env.num_quality_levels, self.env.num_states[0])) * base_concentration
+
+    #     # Search modalities (info_relevance, usefulness, source_quality)
+    #     for m in range(3, 6):
+    #         pA[m] = np.ones((self.env.num_quality_levels, self.env.num_states[1])) * base_concentration
+            
+    #         # For each search state
+    #         for search_idx in range(self.env.num_search_states):
+    #             if search_idx == 0:  # No search - expect low scores
+    #                 peak_score = 2
+    #                 width = 1
+    #             else:
+    #                 # Different peaks for different search terms
+    #                 if search_idx in [1, 2]:  # Prompt engineering & LLM chain of thought
+    #                     peak_score = 8  # High relevance expected
+    #                     width = 1.5
+    #                 elif search_idx in [3, 4, 5]:  # Task decomposition & system design
+    #                     peak_score = 7  # Medium-high relevance
+    #                     width = 2.0
+    #                 elif search_idx in [6, 7]:  # Workflow & synthesis methods
+    #                     peak_score = 6  # Medium relevance
+    #                     width = 2.0
+    #                 else:  # Verification & quality assessment
+    #                     peak_score = 5  # Medium-low relevance
+    #                     width = 2.5
+                        
+    #             # Add concentration around peak with falloff
+    #             for obs_idx in range(self.env.num_quality_levels):
+    #                 distance = abs(obs_idx - peak_score)
+    #                 if distance <= width * 2:  # Within 2 standard deviations
+    #                     pA[m][obs_idx, search_idx] += 2.0 * np.exp(-0.5 * (distance/width)**2)
+
+    #     # Info state modality stays uniform
+    #     pA[INFO_STATE_MODALITY_ID] = np.ones((self.env.num_info_states, self.env.num_states[2])) * base_concentration
+                    
+    #     return pA
 
     def _construct_pB_prior(self):
         """Construct minimal structured priors for B."""
@@ -541,7 +587,7 @@ class ResearchAgentController:
             print(f"\nSelected action: {action}")
 
             # 4. Step environment
-            observation = self.env.step(action)
+            observation = self.env.step_test(action)
             observations.append(observation)
 
             if self.save_history:
@@ -551,9 +597,11 @@ class ResearchAgentController:
             if self.save_history:
                 self._update_history(observation, qs, action)
 
+            print(f"This is the action: {action}")
+
             # 6. Learn parameters (observation model)
             if hasattr(self.agent, 'pA'):
-                self.agent.update_A(observation)
+                self.agent.update_A(observation, action)
 
             # Only update B if we have previous states to compare with
             if hasattr(self.agent, 'pB') and qs_prev is not None:

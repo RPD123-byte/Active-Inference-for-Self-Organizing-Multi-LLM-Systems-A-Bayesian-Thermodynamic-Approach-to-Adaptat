@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import List, Tuple, Optional
 import logging
-from active_inference.env import ResearchAgentEnv
-from active_inference.agent_evaluator import AgentEvaluator
+from active_inference_paper.env import ResearchAgentEnv
+from active_inference_paper.agent_evaluator import AgentEvaluator
 from pymdp import control
 
 # Constants for state and modality indices (same as in environment)
@@ -333,7 +333,7 @@ class ResearchAgentController:
             print(f"\nSelected action: {action}")
 
             # 4. Step environment
-            observation = self.env.step_test(action)
+            observation = self.env.step(action)
             observations.append(observation)
 
             if self.save_history:

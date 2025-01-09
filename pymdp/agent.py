@@ -750,7 +750,7 @@ class Agent(object):
 
         return action, p_dist
 
-    def update_A(self, obs):
+    def update_A(self, obs, actions):
         """
         Update approximate posterior beliefs about Dirichlet parameters that parameterise the observation likelihood or ``A`` array.
 
@@ -772,8 +772,9 @@ class Agent(object):
             obs, 
             self.qs, 
             self.A_factor_list,
+            actions,
             self.lr_pA, 
-            self.modalities_to_learn
+            self.modalities_to_learn,
         )
 
         self.pA = qA # set new prior to posterior

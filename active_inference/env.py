@@ -426,26 +426,26 @@ class ResearchAgentEnv(Env):
             self._test_kb_counter += 1
                 
         elif actions[1] > 0:  # Search action
-            search_terms = [
-                "research agent prompt engineering best practices",
-                "LLM chain of thought prompting techniques",
-                "collaborative AI agent prompt patterns",
-                "task decomposition prompt strategies",
-                "multi-agent system prompt design",
-                "research workflow prompt optimization",
-                "information synthesis prompt methods",
-                "fact verification prompt techniques",
-                "source evaluation prompt patterns",
-                "research quality assessment prompts"
-            ]
-            print(f"\nExecuting test search action:")
-            print(f"Search term: {search_terms[int(actions[1])-1]}")
+            search_idx = int(actions[1]) - 1
             
-            base_quality = rng.randint(5, 11)
-            for i in range(3, 6):
-                observation[i] = min(10, max(0, base_quality + rng.randint(-2, 3)))
-                
-            # Increment knowledge base counter for search action
+            # Much more distinct distributions per search type
+            if search_idx in [0, 1]:  # Prompt engineering & LLM topics
+                observation[3] = 9  # Highly relevant
+                observation[4] = 8
+                observation[5] = 8
+            elif search_idx in [2, 3, 4]:  # Task decomposition & system design
+                observation[3] = 7  # Moderately relevant
+                observation[4] = 6
+                observation[5] = 7
+            elif search_idx in [5, 6]:  # Workflow & synthesis
+                observation[3] = 5  # Less relevant
+                observation[4] = 5
+                observation[5] = 5
+            else:  # Verification & assessment
+                observation[3] = 4  # Least relevant
+                observation[4] = 3
+                observation[5] = 4
+                # Increment knowledge base counter for search action
             self._test_kb_counter += 1
         
         # Set info state based on knowledge base counter, same logic as step()

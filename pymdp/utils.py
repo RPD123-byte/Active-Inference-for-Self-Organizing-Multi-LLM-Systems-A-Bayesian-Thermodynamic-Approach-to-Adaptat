@@ -330,6 +330,8 @@ def process_observation(obs, num_modalities, num_observations):
     - If `obs` is a tuple, same logic as applies for list (see above).
     - if `obs` is a numpy object array (array of arrays), this function will return `obs` unchanged.
     """
+    print("\nPROCESSING OBSERVATION:")
+    print("Input observation:", obs)
 
     if isinstance(obs, np.ndarray) and not is_obj_array(obs):
         assert num_modalities == 1, "If `obs` is a 1D numpy array, `num_modalities` must be equal to 1"
@@ -341,8 +343,13 @@ def process_observation(obs, num_modalities, num_observations):
     if isinstance(obs, tuple) or isinstance(obs,list):
         obs_arr_arr = obj_array(num_modalities)
         for m in range(num_modalities):
-            obs_arr_arr[m] = onehot(obs[m], num_observations[m])
+            if obs[m] is None:
+                obs_arr_arr[m] = np.zeros(num_observations[m])  # None -> zeros
+            else:
+                obs_arr_arr[m] = onehot(obs[m], num_observations[m])
         obs = obs_arr_arr
+
+    print("Processed observation:", obs)
 
     return obs
 
